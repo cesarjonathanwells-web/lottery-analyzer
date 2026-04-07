@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { GAME_GROUPS, getGameById } from "@/lib/games";
+import { GAME_GROUPS } from "@/lib/games";
 import { useGameStore } from "@/lib/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -12,18 +14,26 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  BarChart3,
   ChevronDown,
   ChevronRight,
   Dices,
+  LayoutDashboard,
   Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const NAV_LINKS = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
+] as const;
 
 // ── Sidebar Content ──────────────────────────────────────────────────────────
 
 function SidebarContent() {
   const { activeGameId, setActiveGameId } = useGameStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const pathname = usePathname();
 
   function toggle(label: string) {
     setCollapsed((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -38,6 +48,33 @@ function SidebarContent() {
           Lottery Analyzer
         </span>
       </div>
+
+      {/* Navigation links */}
+      <nav className="flex flex-col gap-0.5 px-2 pb-3">
+        {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+          const isActive =
+            href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-all",
+                isActive
+                  ? "bg-[var(--gold)]/10 text-[var(--gold)] font-medium"
+                  : "text-[var(--muted-foreground)] hover:bg-white/[0.04] hover:text-[var(--foreground)]",
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mx-3 mb-2 border-t border-[var(--border)]" />
 
       {/* Game list */}
       <ScrollArea className="flex-1 px-2">
