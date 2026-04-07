@@ -12,10 +12,11 @@ interface JackpotChartProps {
 }
 
 async function fetchDrawsWithJackpot(gameId: string): Promise<Draw[]> {
-  const res = await fetch(`/api/results?game=${gameId}&limit=200`);
+  // Fetch from EBG proxy — no DB required
+  const res = await fetch(`/api/proxy?type=results&game=${gameId}&limit=200`);
   if (!res.ok) throw new Error("Failed to fetch draws");
   const json = await res.json();
-  return json.draws ?? [];
+  return json.draws ?? json.data ?? [];
 }
 
 function formatJackpot(value: number): string {

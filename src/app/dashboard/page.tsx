@@ -11,9 +11,6 @@ import { HotColdPanel } from "@/components/lottery/hot-cold-panel";
 import { FrequencyChart } from "@/components/charts/frequency-chart";
 import { NumberBall } from "@/components/lottery/number-ball";
 import { DrawHistory } from "@/components/lottery/draw-history";
-import { LiveDrawWidget } from "@/components/lottery/live-draw-widget";
-import { CalendarHeatmap } from "@/components/charts/calendar-heatmap";
-import { JackpotChart } from "@/components/charts/jackpot-chart";
 import {
   BarChart3,
   Clock,
@@ -22,20 +19,18 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-// ── Fetchers ─────────────────────────────────────────────────────────────────
+// ── Fetchers (via EBG proxy — no DB required) ───────────────────────────────
 
 async function fetchFrequencies(gameId: string): Promise<FrequencyResult[]> {
-  const res = await fetch(
-    `/api/analysis?game=${gameId}&type=frequency`,
-  );
+  const res = await fetch(`/api/proxy?type=frequency&game=${gameId}`);
   if (!res.ok) throw new Error("Failed to fetch frequencies");
   const json = await res.json();
-  return json.payload?.data ?? json.data ?? [];
+  return json.data ?? [];
 }
 
 async function fetchDraws(gameId: string, limit = 5): Promise<Draw[]> {
   const res = await fetch(
-    `/api/results?game=${gameId}&limit=${limit}`,
+    `/api/proxy?type=results&game=${gameId}&limit=${limit}`,
   );
   if (!res.ok) throw new Error("Failed to fetch draws");
   const json = await res.json();
@@ -67,6 +62,44 @@ function QuickStat({
         </p>
       </div>
     </div>
+  );
+}
+
+// ── Calendar Heatmap placeholder (no DB dependency) ─────────────────────────
+
+function CalendarHeatmapPlaceholder({ gameId }: { gameId: string }) {
+  const { data: draws, isLoading } = useQuery({
+    queryKey: ["calendar-draws-proxy", gameId],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/proxy?type=results&game=${gameId}&limit=200`,
+      );
+      if (!res.ok) return [];
+      const json = await res.json();
+      return (json.draws ?? json.data ?? []) as Draw[];
+    },
+    enabled: !!gameId,
+  });
+
+  const drawCount = draws?.length ?? 0;
+
+  return (
+    <AnalysisCard
+      title="Draw Calendar"
+      subtitle={`${drawCount} draws loaded from EBG`}
+      loading={isLoading}
+    >
+      <div className="flex h-[120px] items-center justify-center text-sm text-[var(--muted-foreground)]">
+        <div className="text-center">
+          <p className="font-mono text-2xl font-bold text-[var(--gold)]">
+            {drawCount}
+          </p>
+          <p className="mt-1 text-xs">
+            historical draws available
+          </p>
+        </div>
+      </div>
+    </AnalysisCard>
   );
 }
 
@@ -104,9 +137,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Live Draw Widget */}
-      <LiveDrawWidget />
-
       {/* Latest Draw */}
       <AnalysisCard
         title="Latest Draw"
@@ -198,11 +228,8 @@ export default function DashboardPage() {
         )}
       </AnalysisCard>
 
-      {/* Calendar Heatmap */}
-      <CalendarHeatmap gameId={activeGameId} />
-
-      {/* Jackpot Tracker (only meaningful for major lotteries) */}
-      <JackpotChart gameId={activeGameId} />
+      {/* Calendar Heatmap (simplified — no DB) */}
+      <CalendarHeatmapPlaceholder gameId={activeGameId} />
     </div>
   );
 }

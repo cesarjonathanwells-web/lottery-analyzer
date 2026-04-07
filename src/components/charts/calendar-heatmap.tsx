@@ -15,16 +15,15 @@ interface CalendarHeatmapProps {
 
 async function fetchDrawsForYear(
   gameId: string,
-  year: number,
+  _year: number,
 ): Promise<Draw[]> {
-  const from = `${year}-01-01`;
-  const to = `${year}-12-31`;
+  // Fetch from EBG proxy (returns recent draws, not year-filtered)
   const res = await fetch(
-    `/api/results?game=${gameId}&limit=200&from=${from}&to=${to}`,
+    `/api/proxy?type=results&game=${gameId}&limit=200`,
   );
   if (!res.ok) throw new Error("Failed to fetch draws");
   const json = await res.json();
-  return json.draws ?? [];
+  return json.draws ?? json.data ?? [];
 }
 
 export function CalendarHeatmap({ gameId, year: defaultYear }: CalendarHeatmapProps) {

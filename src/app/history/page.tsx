@@ -26,13 +26,13 @@ import { useState } from "react";
 
 async function fetchAllDraws(
   gameId: string,
-  from?: string,
-  to?: string,
+  _from?: string,
+  _to?: string,
 ): Promise<Draw[]> {
-  const params = new URLSearchParams({ game: gameId, limit: "500" });
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
-  const res = await fetch(`/api/results?${params.toString()}`);
+  // Fetch from EBG proxy — no DB required
+  const res = await fetch(
+    `/api/proxy?type=results&game=${gameId}&limit=500`,
+  );
   if (!res.ok) throw new Error("Failed to fetch draws");
   const json = await res.json();
   return json.draws ?? json.data ?? [];
