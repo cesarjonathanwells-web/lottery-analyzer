@@ -17,6 +17,9 @@ export { computePatterns } from "./patterns";
 export { computePairs } from "./pairs";
 export { computeDeltas } from "./delta";
 export { computeChiSquare } from "./chi-square";
+export { findCoincidences } from "./coincidences";
+export { findDayLikeToday } from "./day-like-today";
+export { findRepeatedNumbers } from "./repeated";
 export type * from "./types";
 
 /** Cache TTL in milliseconds (1 hour) */
