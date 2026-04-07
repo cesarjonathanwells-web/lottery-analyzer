@@ -11,6 +11,9 @@ import { HotColdPanel } from "@/components/lottery/hot-cold-panel";
 import { FrequencyChart } from "@/components/charts/frequency-chart";
 import { NumberBall } from "@/components/lottery/number-ball";
 import { DrawHistory } from "@/components/lottery/draw-history";
+import { LiveDrawWidget } from "@/components/lottery/live-draw-widget";
+import { CalendarHeatmap } from "@/components/charts/calendar-heatmap";
+import { JackpotChart } from "@/components/charts/jackpot-chart";
 import {
   BarChart3,
   Clock,
@@ -101,6 +104,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Live Draw Widget */}
+      <LiveDrawWidget />
+
       {/* Latest Draw */}
       <AnalysisCard
         title="Latest Draw"
@@ -191,6 +197,12 @@ export default function DashboardPage() {
           <DrawHistory draws={recentDraws} gameType={game.gameType} pageSize={5} />
         )}
       </AnalysisCard>
+
+      {/* Calendar Heatmap */}
+      <CalendarHeatmap gameId={activeGameId} />
+
+      {/* Jackpot Tracker (only meaningful for major lotteries) */}
+      <JackpotChart gameId={activeGameId} />
     </div>
   );
 }

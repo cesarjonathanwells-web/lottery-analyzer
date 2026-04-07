@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
   Menu,
   Sparkles,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +31,7 @@ const NAV_LINKS = [
   { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
   { href: "/dashboard/wheels", label: "Wheels", icon: CircleDot },
   { href: "/dashboard/generator", label: "Generator", icon: Sparkles },
+  { href: "/dashboard/backtest", label: "Backtest", icon: Target },
 ] as const;
 
 // ── Sidebar Content ──────────────────────────────────────────────────────────
