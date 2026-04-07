@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
-import { fetchDraws, fetchGame } from "@/lib/analysis";
+import { fetchRecentDraws } from "@/lib/ebg-client";
+import { getGameById } from "@/lib/games";
 
 /**
  * POST /api/backtest
@@ -10,6 +11,8 @@ import { fetchDraws, fetchGame } from "@/lib/analysis";
  *   gameId, totalDraws, matchDistribution, bestMatch, timeline,
  *   estimatedWins
  * }
+ *
+ * Now fetches draws from EBG API instead of a database.
  */
 export async function POST(request: NextRequest) {
   let body: { gameId?: string; numbers?: number[]; bonusNumbers?: number[] };
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const game = await fetchGame(gameId);
+  const game = getGameById(gameId);
   if (!game) {
     return Response.json(
       { error: `Game not found: ${gameId}` },
@@ -45,10 +48,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // ── Fetch all draws ─────────────────────────────────────────────────────
+  // ── Fetch all draws from EBG ───────────────────────────────────────────
   let allDraws;
   try {
-    allDraws = await fetchDraws(gameId);
+    allDraws = await fetchRecentDraws(gameId, 365);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Internal server error";
@@ -109,7 +112,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Sort timeline chronologically (draws come desc from DB)
+  // Sort timeline chronologically (draws come desc from EBG)
   timeline.reverse();
 
   // ── Prize estimation (simplified tier system) ───────────────────────────

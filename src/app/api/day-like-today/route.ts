@@ -1,10 +1,15 @@
 import { type NextRequest } from "next/server";
+import { fetchRecentDraws, isSupported } from "@/lib/ebg-client";
 import { findDayLikeToday } from "@/lib/analysis/day-like-today";
+import { GAMES } from "@/lib/games";
+import type { Draw } from "@/lib/types";
 
 /**
  * GET /api/day-like-today?month=4&day=7&game=optional
  *
  * Returns DayLikeTodayResult
+ *
+ * Now fetches draws from EBG API for supported games and filters by date in memory.
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -38,7 +43,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await findDayLikeToday(month, day, gameId);
+    let allDraws: Draw[] = [];
+
+    if (gameId) {
+      // Fetch draws for a specific game
+      if (!isSupported(gameId)) {
+        return Response.json(
+          { error: `Game '${gameId}' is not supported by EBG API` },
+          { status: 400 },
+        );
+      }
+      allDraws = await fetchRecentDraws(gameId, 365);
+    } else {
+      // Fetch draws across all supported games
+      const supportedGames = GAMES.filter((g) => isSupported(g.id));
+      const results = await Promise.allSettled(
+        supportedGames.map((g) => fetchRecentDraws(g.id, 365)),
+      );
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          allDraws.push(...result.value);
+        }
+      }
+    }
+
+    const result = findDayLikeToday(allDraws, month, day, gameId);
     return Response.json(result);
   } catch (error) {
     const message =

@@ -1,7 +1,5 @@
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { draws as drawsTable } from "@/lib/db/schema";
 import { getGameById } from "@/lib/games";
+import type { Draw } from "@/lib/types";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -182,9 +180,16 @@ function passesDateFilter(
 
 // ── Main Search Function ────────────────────────────────────────────────────
 
-export async function searchNumbers(
+/**
+ * Search through pre-fetched draws for matching numbers.
+ *
+ * @param allDraws - All draws to search through (pre-fetched from EBG)
+ * @param params   - Search parameters
+ */
+export function searchNumbers(
+  allDraws: Draw[],
   params: SearchParams,
-): Promise<SearchResponse> {
+): SearchResponse {
   const {
     numbers,
     gameIds,
@@ -203,51 +208,17 @@ export async function searchNumbers(
   // Expand search numbers if reversed is enabled
   const searchNums = reversed ? expandWithReversed(numbers) : [...numbers];
 
-  // Build base query conditions
-  const conditions = [];
-
+  // Filter by game if specified
+  let rows = allDraws;
   if (gameIds.length > 0) {
-    conditions.push(inArray(drawsTable.gameId, gameIds));
+    const gameIdSet = new Set(gameIds);
+    rows = rows.filter((d) => gameIdSet.has(d.gameId));
   }
 
-  // Use the GIN index: filter draws that contain at least one of the search numbers.
-  // For quiniela mode, check array overlap (&&); for pale/tripleta, check containment (@>).
-  if (mode === "quiniela") {
-    // Any draw containing at least one of the search numbers
-    conditions.push(
-      sql`${drawsTable.numbers} && ARRAY[${sql.join(
-        searchNums.map((n) => sql`${n}`),
-        sql`, `,
-      )}]::integer[]`,
-    );
-  } else if (mode === "pale") {
-    // For pale, we need draws containing at least 2 of the search numbers.
-    // We use overlap first to narrow down, then check in JS.
-    conditions.push(
-      sql`${drawsTable.numbers} && ARRAY[${sql.join(
-        searchNums.map((n) => sql`${n}`),
-        sql`, `,
-      )}]::integer[]`,
-    );
-  } else {
-    // tripleta: draws containing at least 3 of the search numbers
-    conditions.push(
-      sql`${drawsTable.numbers} && ARRAY[${sql.join(
-        searchNums.map((n) => sql`${n}`),
-        sql`, `,
-      )}]::integer[]`,
-    );
-  }
-
-  const whereClause =
-    conditions.length === 1 ? conditions[0] : and(...conditions);
-
-  // Fetch candidate rows (we fetch all candidates then filter in JS for precision)
-  const rows = await db
-    .select()
-    .from(drawsTable)
-    .where(whereClause)
-    .orderBy(desc(drawsTable.drawDate));
+  // Sort by date descending
+  rows = [...rows].sort(
+    (a, b) => new Date(b.drawDate).getTime() - new Date(a.drawDate).getTime(),
+  );
 
   // Generate the combinations to search for based on mode
   let searchCombos: number[][] = [];
@@ -315,7 +286,7 @@ export async function searchNumbers(
       const game = getGameById(row.gameId);
       const searchResult: SearchResult = {
         draw: {
-          id: String(row.id),
+          id: row.id,
           gameId: row.gameId,
           gameName: game?.name ?? row.gameId,
           drawDate: row.drawDate,

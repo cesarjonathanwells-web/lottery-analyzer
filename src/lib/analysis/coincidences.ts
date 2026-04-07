@@ -1,11 +1,9 @@
-import { eq, desc } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { draws as drawsTable } from "@/lib/db/schema";
+import type { Draw } from "@/lib/types";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export interface CoincidenceParams {
-  gameId: string;
+  draws: Draw[];
   referenceNumbers: number[];
   minMatches?: number; // default 2
 }
@@ -31,29 +29,22 @@ export interface CoincidenceResult {
 
 /**
  * Find historical draws that share the most numbers with a reference set.
- * For each draw of the same game, count overlapping numbers with referenceNumbers.
+ * For each draw, count overlapping numbers with referenceNumbers.
  * Returns sorted by matchCount descending, then by drawDate descending.
  */
-export async function findCoincidences(
+export function findCoincidences(
   params: CoincidenceParams,
-): Promise<CoincidenceResult> {
-  const { gameId, referenceNumbers, minMatches = 2 } = params;
+): CoincidenceResult {
+  const { draws, referenceNumbers, minMatches = 2 } = params;
 
   const refSet = new Set(referenceNumbers);
 
-  // Fetch all draws for this game, sorted by date descending
-  const rows = await db
-    .select()
-    .from(drawsTable)
-    .where(eq(drawsTable.gameId, gameId))
-    .orderBy(desc(drawsTable.drawDate));
-
-  const totalDrawsSearched = rows.length;
+  const totalDrawsSearched = draws.length;
   const distribution: Record<number, number> = {};
   const matches: CoincidenceMatch[] = [];
 
-  for (const row of rows) {
-    const drawNumbers = row.numbers;
+  for (const draw of draws) {
+    const drawNumbers = draw.numbers;
     const matched = drawNumbers.filter((n) => refSet.has(n));
     const matchCount = matched.length;
 
@@ -65,9 +56,9 @@ export async function findCoincidences(
     if (matchCount >= minMatches) {
       matches.push({
         draw: {
-          id: String(row.id),
-          drawDate: row.drawDate,
-          drawTime: row.drawTime,
+          id: draw.id,
+          drawDate: draw.drawDate,
+          drawTime: draw.drawTime,
           numbers: drawNumbers,
         },
         matchedNumbers: matched,

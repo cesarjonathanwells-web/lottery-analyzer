@@ -1,4 +1,3 @@
-import { fetchDraws } from "@/lib/analysis/index";
 import type { Draw } from "@/lib/types";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -28,14 +27,15 @@ const DAY_NAMES = [
 
 /**
  * Weekly grid analysis: show which numbers appear most on each day of the week.
+ *
+ * @param draws    - Pre-fetched draws
+ * @param position - Optional position filter (1-based). 0 or undefined = all positions.
  */
-export async function computeWeeklyGrid(
-  gameId: string,
+export function computeWeeklyGrid(
+  draws: Draw[],
   position?: number,
-): Promise<WeeklyGridResult> {
-  const drawList = await fetchDraws(gameId);
-
-  if (drawList.length === 0) {
+): WeeklyGridResult {
+  if (draws.length === 0) {
     return {
       grid: DAY_NAMES.map((dayOfWeek) => ({
         dayOfWeek,
@@ -56,7 +56,7 @@ export async function computeWeeklyGrid(
     totalDraws: 0,
   }));
 
-  for (const draw of drawList) {
+  for (const draw of draws) {
     const date = new Date(draw.drawDate + "T12:00:00"); // noon to avoid timezone issues
     const dayIndex = date.getDay();
 
@@ -89,6 +89,6 @@ export async function computeWeeklyGrid(
 
   return {
     grid,
-    drawsAnalyzed: drawList.length,
+    drawsAnalyzed: draws.length,
   };
 }

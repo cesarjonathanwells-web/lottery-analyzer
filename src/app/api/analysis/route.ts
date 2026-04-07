@@ -20,6 +20,8 @@ const VALID_TYPES: Set<string> = new Set([
  * - type  (required) — analysis type: frequency | gap | pattern | pairs | delta | chi_square
  * - draws (optional) — limit to last N draws
  * - topN  (optional) — for pairs analysis, number of top pairs to return
+ *
+ * Now fetches draws from EBG API instead of a database.
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

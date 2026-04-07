@@ -1,4 +1,3 @@
-import { fetchDraws } from "@/lib/analysis/index";
 import type { Draw } from "@/lib/types";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -22,12 +21,15 @@ export interface TerminalResult {
 /**
  * Terminal digit analysis: extract the last digit (terminal) of each winning
  * number and count frequency of terminals 0-9.
+ *
+ * @param draws     - Pre-fetched draws
+ * @param drawCount - Optional limit on how many draws to analyze
  */
-export async function computeTerminals(
-  gameId: string,
+export function computeTerminals(
+  draws: Draw[],
   drawCount?: number,
-): Promise<TerminalResult> {
-  const drawList = await fetchDraws(gameId, drawCount);
+): TerminalResult {
+  const drawList = drawCount ? draws.slice(0, drawCount) : draws;
 
   if (drawList.length === 0) {
     return {

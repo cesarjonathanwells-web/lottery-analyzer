@@ -1,6 +1,4 @@
-import { eq, desc, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { draws as drawsTable, games as gamesTable } from "@/lib/db/schema";
+import type { Draw } from "@/lib/types";
 import { GAMES } from "@/lib/games";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -26,47 +24,53 @@ export interface DayLikeTodayResult {
 /**
  * Find all draws that happened on a given month+day across all years.
  * Optionally filter by a specific game. Computes number frequency for that date.
+ *
+ * @param allDraws - All draws to search through (pre-fetched from EBG)
+ * @param month    - Target month (1-12)
+ * @param day      - Target day (1-31)
+ * @param gameId   - Optional game filter
  */
-export async function findDayLikeToday(
+export function findDayLikeToday(
+  allDraws: Draw[],
   month: number,
   day: number,
   gameId?: string,
-): Promise<DayLikeTodayResult> {
+): DayLikeTodayResult {
   // Build game name lookup from static registry
   const gameNameMap = new Map(GAMES.map((g) => [g.id, g.name]));
 
-  // Use SQL extraction to match month and day from the draw_date column
   const monthStr = String(month).padStart(2, "0");
   const dayStr = String(day).padStart(2, "0");
 
-  // Build conditions: match month and day from the date column
-  const conditions = [
-    sql`EXTRACT(MONTH FROM ${drawsTable.drawDate}::date) = ${month}`,
-    sql`EXTRACT(DAY FROM ${drawsTable.drawDate}::date) = ${day}`,
-  ];
+  // Filter draws by month and day (and optionally game)
+  const filtered = allDraws.filter((draw) => {
+    // Parse date: expected format "YYYY-MM-DD"
+    const parts = draw.drawDate.split("-");
+    if (parts.length < 3) return false;
+    const drawMonth = parts[1];
+    const drawDay = parts[2];
 
-  if (gameId) {
-    conditions.push(sql`${drawsTable.gameId} = ${gameId}`);
-  }
+    if (drawMonth !== monthStr || drawDay !== dayStr) return false;
+    if (gameId && draw.gameId !== gameId) return false;
 
-  const whereClause = sql.join(conditions, sql` AND `);
+    return true;
+  });
 
-  const rows = await db
-    .select()
-    .from(drawsTable)
-    .where(whereClause)
-    .orderBy(desc(drawsTable.drawDate));
+  // Sort by date descending
+  const sorted = [...filtered].sort(
+    (a, b) => new Date(b.drawDate).getTime() - new Date(a.drawDate).getTime(),
+  );
 
-  // Map rows to result format
-  const draws: DayLikeTodayDraw[] = rows.map((row) => {
-    const dateObj = new Date(row.drawDate + "T00:00:00");
+  // Map to result format
+  const draws: DayLikeTodayDraw[] = sorted.map((draw) => {
+    const dateObj = new Date(draw.drawDate + "T00:00:00");
     return {
       year: dateObj.getFullYear(),
-      gameId: row.gameId,
-      gameName: gameNameMap.get(row.gameId) ?? row.gameId,
-      drawDate: row.drawDate,
-      numbers: row.numbers,
-      drawTime: row.drawTime,
+      gameId: draw.gameId,
+      gameName: gameNameMap.get(draw.gameId) ?? draw.gameId,
+      drawDate: draw.drawDate,
+      numbers: draw.numbers,
+      drawTime: draw.drawTime,
     };
   });
 

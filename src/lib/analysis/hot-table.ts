@@ -1,12 +1,9 @@
-import { eq, desc, gte, and } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { draws as drawsTable } from "@/lib/db/schema";
 import type { Draw } from "@/lib/types";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface HotTableParams {
-  gameId: string;
+  draws: Draw[];
   days: number; // Window size: 7, 15, 30, 60, 90, 180, 365
   limit: number; // Top N numbers to show
   position?: number; // 0=all, 1=first, 2=second, 3=third
@@ -30,10 +27,10 @@ export interface HotTableResult {
 
 // ── Implementation ─────────────────────────────────────────────────────────
 
-export async function computeHotTable(
+export function computeHotTable(
   params: HotTableParams,
-): Promise<HotTableResult> {
-  const { gameId, days, limit, position = 0 } = params;
+): HotTableResult {
+  const { draws, days, limit, position = 0 } = params;
 
   // Calculate date boundary
   const now = new Date();
@@ -41,19 +38,15 @@ export async function computeHotTable(
   fromDate.setDate(fromDate.getDate() - days);
   const fromDateStr = fromDate.toISOString().split("T")[0];
 
-  // Fetch draws within the window
-  const rows = await db
-    .select()
-    .from(drawsTable)
-    .where(
-      and(
-        eq(drawsTable.gameId, gameId),
-        gte(drawsTable.drawDate, fromDateStr),
-      ),
-    )
-    .orderBy(desc(drawsTable.drawDate));
+  // Filter draws within the window
+  const drawList = draws.filter((d) => d.drawDate >= fromDateStr);
 
-  if (rows.length === 0) {
+  // Sort by date descending
+  drawList.sort(
+    (a, b) => new Date(b.drawDate).getTime() - new Date(a.drawDate).getTime(),
+  );
+
+  if (drawList.length === 0) {
     return {
       hotNumbers: [],
       coldNumbers: [],
@@ -61,19 +54,6 @@ export async function computeHotTable(
       dateRange: { from: fromDateStr, to: now.toISOString().split("T")[0] },
     };
   }
-
-  const drawList: Draw[] = rows.map((r) => ({
-    id: String(r.id),
-    gameId: r.gameId,
-    drawDate: r.drawDate,
-    drawTime: r.drawTime,
-    drawPeriod: r.drawPeriod as Draw["drawPeriod"],
-    numbers: r.numbers,
-    bonusNumbers: r.bonusNumbers ?? [],
-    jackpot: r.jackpot,
-    source: r.source,
-    verified: r.verified ?? false,
-  }));
 
   // Count occurrences per number
   const counts = new Map<number, number>();

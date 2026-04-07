@@ -1,6 +1,4 @@
-import { eq, desc } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { draws as drawsTable } from "@/lib/db/schema";
+import type { Draw } from "@/lib/types";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,21 +25,17 @@ export interface RepeatedResult {
  * Find numbers that appear in consecutive draws or repeat within a short window.
  * Popular in Dominican lottery culture: "the number is running hot".
  *
- * @param gameId           - Game slug
+ * @param draws            - Pre-fetched draws, sorted by date descending (newest first)
  * @param lookbackDraws    - How many recent draws to analyze (default 50)
  * @param includeReversed  - If true, 12 also counts as 21 (digit reversal matching)
  */
-export async function findRepeatedNumbers(
-  gameId: string,
+export function findRepeatedNumbers(
+  draws: Draw[],
   lookbackDraws: number = 50,
   includeReversed: boolean = false,
-): Promise<RepeatedResult> {
-  const rows = await db
-    .select()
-    .from(drawsTable)
-    .where(eq(drawsTable.gameId, gameId))
-    .orderBy(desc(drawsTable.drawDate))
-    .limit(lookbackDraws);
+): RepeatedResult {
+  // Take only the lookback window (draws should already be sorted newest first)
+  const rows = draws.slice(0, lookbackDraws);
 
   if (rows.length === 0) {
     return { repeated: [], drawsAnalyzed: 0 };

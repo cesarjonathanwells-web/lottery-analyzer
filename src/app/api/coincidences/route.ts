@@ -1,4 +1,5 @@
 import { type NextRequest } from "next/server";
+import { fetchRecentDraws } from "@/lib/ebg-client";
 import { findCoincidences } from "@/lib/analysis/coincidences";
 import { findRepeatedNumbers } from "@/lib/analysis/repeated";
 
@@ -7,6 +8,8 @@ import { findRepeatedNumbers } from "@/lib/analysis/repeated";
  * Body: { gameId, referenceNumbers, minMatches? }
  *
  * Returns CoincidenceResult
+ *
+ * Now fetches draws from EBG API and passes them to pure analysis functions.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -50,8 +53,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await findCoincidences({
-      gameId,
+    // Fetch draws from EBG
+    const draws = await fetchRecentDraws(gameId, 365);
+
+    const result = findCoincidences({
+      draws,
       referenceNumbers,
       minMatches: parsedMinMatches,
     });
@@ -71,6 +77,8 @@ export async function POST(request: NextRequest) {
  *
  * Returns RepeatedResult — numbers that appear in consecutive draws.
  * Note: This is bundled here to keep route count manageable.
+ *
+ * Now fetches draws from EBG API and passes them to pure analysis functions.
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -97,8 +105,11 @@ export async function GET(request: NextRequest) {
   const includeReversed = reversed === "true";
 
   try {
-    const result = await findRepeatedNumbers(
-      gameId,
+    // Fetch draws from EBG (get more than lookback to ensure coverage)
+    const draws = await fetchRecentDraws(gameId, Math.max(lookbackDraws * 2, 180));
+
+    const result = findRepeatedNumbers(
+      draws,
       lookbackDraws,
       includeReversed,
     );

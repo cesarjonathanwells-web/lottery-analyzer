@@ -23,15 +23,7 @@ import { PositionalChart } from "@/components/charts/positional-chart";
 // ── Fetchers ────────────────────────────────────────────────────────────────
 
 async function fetchAnalysis<T>(gameId: string, type: string): Promise<T> {
-  // Try EBG proxy first for frequency-compatible types, fallback to /api/analysis
-  if (type === "frequency") {
-    const res = await fetch(`/api/proxy?type=frequency&game=${gameId}`);
-    if (res.ok) {
-      const json = await res.json();
-      return (json.data ?? []) as T;
-    }
-  }
-  // For other analysis types, try original endpoint (may fail without DB)
+  // All analysis types now go through /api/analysis which uses EBG under the hood
   const res = await fetch(`/api/analysis?game=${gameId}&type=${type}`);
   if (!res.ok) throw new Error(`Failed to fetch ${type} analysis`);
   const json = await res.json();

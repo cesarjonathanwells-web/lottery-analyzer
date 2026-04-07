@@ -1,4 +1,3 @@
-import { fetchDraws } from "@/lib/analysis/index";
 import type { Draw } from "@/lib/types";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -17,23 +16,23 @@ export interface SuccessionResult {
  * Succession/Sequence analysis: for a given target number, find every draw
  * where it appeared, then check which numbers appeared in the NEXT draw.
  * Count those to find "numbers that follow" patterns.
+ *
+ * @param draws        - Pre-fetched draws (any sort order, will be sorted internally)
+ * @param targetNumber - The number to track
  */
-export async function computeSuccession(
-  gameId: string,
+export function computeSuccession(
+  draws: Draw[],
   targetNumber: number,
-  drawCount?: number,
-): Promise<SuccessionResult> {
-  const drawList = await fetchDraws(gameId, drawCount);
-
-  if (drawList.length < 2) {
+): SuccessionResult {
+  if (draws.length < 2) {
     return {
       sequences: [{ number: targetNumber, nextOccurrences: [] }],
-      drawsAnalyzed: drawList.length,
+      drawsAnalyzed: draws.length,
     };
   }
 
   // Sort draws by date ascending (oldest first) so "next draw" = index + 1
-  const sorted = [...drawList].sort(
+  const sorted = [...draws].sort(
     (a, b) => new Date(a.drawDate).getTime() - new Date(b.drawDate).getTime(),
   );
 

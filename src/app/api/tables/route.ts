@@ -1,4 +1,5 @@
 import { type NextRequest } from "next/server";
+import { fetchRecentDraws } from "@/lib/ebg-client";
 import { computeHotTable } from "@/lib/analysis/hot-table";
 import { computeTerminals } from "@/lib/analysis/terminals";
 import { computeSuccession } from "@/lib/analysis/succession";
@@ -11,6 +12,8 @@ const VALID_TYPES = new Set(["hot", "terminals", "succession", "weekly"]);
  * GET /api/tables?type=terminals&game=xxx&draws=100
  * GET /api/tables?type=succession&game=xxx&number=42&draws=200
  * GET /api/tables?type=weekly&game=xxx&position=0
+ *
+ * Now fetches draws from EBG API and passes them to pure analysis functions.
  */
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -57,8 +60,10 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        const result = await computeHotTable({
-          gameId: game,
+        // Fetch enough draws to cover the requested window
+        const draws = await fetchRecentDraws(game, Math.max(days, 90));
+        const result = computeHotTable({
+          draws,
           days,
           limit,
           position,
@@ -67,16 +72,17 @@ export async function GET(request: NextRequest) {
       }
 
       case "terminals": {
-        const draws = sp.get("draws")
+        const drawsParam = sp.get("draws")
           ? parseInt(sp.get("draws")!, 10)
           : undefined;
-        if (sp.get("draws") && (isNaN(draws!) || draws! < 1)) {
+        if (sp.get("draws") && (isNaN(drawsParam!) || drawsParam! < 1)) {
           return Response.json(
             { error: "draws must be a positive integer" },
             { status: 400 },
           );
         }
-        const result = await computeTerminals(game, draws);
+        const draws = await fetchRecentDraws(game, 365);
+        const result = computeTerminals(draws, drawsParam);
         return Response.json(result);
       }
 
@@ -95,10 +101,13 @@ export async function GET(request: NextRequest) {
             { status: 400 },
           );
         }
-        const draws = sp.get("draws")
+        const drawsParam = sp.get("draws")
           ? parseInt(sp.get("draws")!, 10)
           : undefined;
-        const result = await computeSuccession(game, targetNumber, draws);
+        const days = drawsParam ? Math.max(drawsParam * 2, 180) : 365;
+        const draws = await fetchRecentDraws(game, days);
+        const drawList = drawsParam ? draws.slice(0, drawsParam) : draws;
+        const result = computeSuccession(drawList, targetNumber);
         return Response.json(result);
       }
 
@@ -106,7 +115,8 @@ export async function GET(request: NextRequest) {
         const position = sp.get("position")
           ? parseInt(sp.get("position")!, 10)
           : undefined;
-        const result = await computeWeeklyGrid(game, position);
+        const draws = await fetchRecentDraws(game, 365);
+        const result = computeWeeklyGrid(draws, position);
         return Response.json(result);
       }
 

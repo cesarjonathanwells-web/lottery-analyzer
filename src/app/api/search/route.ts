@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchRecentDraws, isSupported } from "@/lib/ebg-client";
 import { searchNumbers, type SearchParams } from "@/lib/search/engine";
+import { GAMES } from "@/lib/games";
+import type { Draw } from "@/lib/types";
 
+/**
+ * POST /api/search
+ *
+ * Now fetches draws from EBG API and searches in memory.
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -67,6 +75,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Fetch draws from EBG for all relevant games
+    let allDraws: Draw[] = [];
+
+    const targetGameIds =
+      gameIds.length > 0
+        ? gameIds.filter((id: string) => isSupported(id))
+        : GAMES.filter((g) => isSupported(g.id)).map((g) => g.id);
+
+    const results = await Promise.allSettled(
+      targetGameIds.map((gid: string) => fetchRecentDraws(gid, 365)),
+    );
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        allDraws.push(...result.value);
+      }
+    }
+
     const params: SearchParams = {
       numbers: validNumbers,
       gameIds: Array.isArray(gameIds) ? gameIds : [],
@@ -78,7 +103,7 @@ export async function POST(req: NextRequest) {
       offset: Math.max(0, offset),
     };
 
-    const response = await searchNumbers(params);
+    const response = searchNumbers(allDraws, params);
 
     return NextResponse.json(response);
   } catch (error) {
