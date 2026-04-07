@@ -23,19 +23,81 @@ const gameData = [
 
 export async function POST() {
   try {
+    // Create tables if they don't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS games (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        country TEXT NOT NULL,
+        game_type TEXT NOT NULL,
+        number_range INTEGER NOT NULL,
+        balls_drawn INTEGER NOT NULL,
+        bonus_balls INTEGER DEFAULT 0,
+        color TEXT NOT NULL,
+        draw_schedule TEXT
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS draws (
+        id SERIAL PRIMARY KEY,
+        game_id TEXT NOT NULL REFERENCES games(id),
+        draw_date DATE NOT NULL,
+        draw_time TEXT,
+        draw_period TEXT,
+        numbers INTEGER[] NOT NULL,
+        bonus_numbers INTEGER[] DEFAULT '{}',
+        jackpot BIGINT,
+        source TEXT NOT NULL,
+        verified BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS analysis_cache (
+        id SERIAL PRIMARY KEY,
+        game_id TEXT NOT NULL REFERENCES games(id),
+        analysis_type TEXT NOT NULL,
+        params_hash TEXT NOT NULL,
+        result JSONB NOT NULL,
+        computed_at TIMESTAMP DEFAULT NOW(),
+        expires_at TIMESTAMP NOT NULL
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS wheel_templates (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        pool_size INTEGER,
+        pick_size INTEGER,
+        guarantee_match INTEGER,
+        guarantee_if_drawn INTEGER,
+        combinations JSONB NOT NULL,
+        source TEXT
+      )
+    `);
+
+    // Create indexes
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS draws_game_date_time_idx ON draws(game_id, draw_date, draw_time)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS draws_game_date_idx ON draws(game_id, draw_date)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS analysis_cache_lookup_idx ON analysis_cache(game_id, analysis_type, params_hash)`);
+
+    // Seed games
     let inserted = 0;
     for (const g of gameData) {
       await db.insert(games).values(g).onConflictDoNothing();
       inserted++;
     }
 
-    // Verify
     const result = await db.select({ count: sql<number>`count(*)` }).from(games);
     const count = result[0]?.count ?? 0;
 
     return Response.json({ success: true, inserted, totalGames: count });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return Response.json({ success: false, error: message }, { status: 500 });
+    const stack = error instanceof Error ? error.stack : "";
+    return Response.json({ success: false, error: message, stack }, { status: 500 });
   }
 }
