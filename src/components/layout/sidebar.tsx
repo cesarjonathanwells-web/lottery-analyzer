@@ -19,6 +19,7 @@ import {
   Dices,
   LayoutDashboard,
   Menu,
+  Search,
   Sparkles,
   Target,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/search", label: "Search", icon: Search },
   { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
   { href: "/dashboard/wheels", label: "Wheels", icon: CircleDot },
   { href: "/dashboard/generator", label: "Generator", icon: Sparkles },
