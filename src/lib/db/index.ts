@@ -16,15 +16,19 @@ function getDb() {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  const client = globalForDb.pgClient ?? postgres(connectionString);
-  if (process.env.NODE_ENV !== "production") {
-    globalForDb.pgClient = client;
-  }
+  const client =
+    globalForDb.pgClient ??
+    postgres(connectionString, {
+      ssl: false,
+      connect_timeout: 10,
+      idle_timeout: 20,
+      max: 10,
+    });
+
+  globalForDb.pgClient = client;
 
   const instance = drizzle(client, { schema });
-  if (process.env.NODE_ENV !== "production") {
-    globalForDb.drizzleDb = instance;
-  }
+  globalForDb.drizzleDb = instance;
 
   return instance;
 }
