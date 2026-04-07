@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/button";
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
+  { href: "/dashboard/coincidences", label: "Coincidences", icon: GitCompare },
+  { href: "/dashboard/today", label: "Today", icon: CalendarDays },
   { href: "/dashboard/tables", label: "Tables", icon: Table2 },
   { href: "/dashboard/terminals", label: "Terminals", icon: Hash },
   { href: "/dashboard/wheels", label: "Wheels", icon: CircleDot },
