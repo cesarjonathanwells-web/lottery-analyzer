@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { GAME_GROUPS } from "@/lib/games";
+import { GAME_GROUPS, getGameById } from "@/lib/games";
 import { useGameStore } from "@/lib/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -17,15 +15,21 @@ import {
   BarChart3,
   ChevronDown,
   ChevronRight,
+  CircleDot,
   Dices,
   LayoutDashboard,
   Menu,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// ── Nav Links ────────────────────────────────────────────────────────────────
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
+  { href: "/dashboard/wheels", label: "Wheels", icon: CircleDot },
+  { href: "/dashboard/generator", label: "Generator", icon: Sparkles },
 ] as const;
 
 // ── Sidebar Content ──────────────────────────────────────────────────────────
@@ -33,11 +37,13 @@ const NAV_LINKS = [
 function SidebarContent() {
   const { activeGameId, setActiveGameId } = useGameStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const pathname = usePathname();
 
   function toggle(label: string) {
     setCollapsed((prev) => ({ ...prev, [label]: !prev[label] }));
   }
+
+  // Determine current path for active state
+  const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
 
   return (
     <div className="flex h-full flex-col">
@@ -49,17 +55,17 @@ function SidebarContent() {
         </span>
       </div>
 
-      {/* Navigation links */}
+      {/* Navigation */}
       <nav className="flex flex-col gap-0.5 px-2 pb-3">
-        {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+        {NAV_LINKS.map((link) => {
+          const Icon = link.icon;
           const isActive =
-            href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(href);
+            currentPath === link.href ||
+            (link.href !== "/dashboard" && currentPath.startsWith(link.href));
           return (
-            <Link
-              key={href}
-              href={href}
+            <a
+              key={link.href}
+              href={link.href}
               className={cn(
                 "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-all",
                 isActive
@@ -68,13 +74,13 @@ function SidebarContent() {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </Link>
+              <span>{link.label}</span>
+            </a>
           );
         })}
       </nav>
 
-      <div className="mx-3 mb-2 border-t border-[var(--border)]" />
+      <div className="mx-3 mb-3 border-t border-[var(--border)]" />
 
       {/* Game list */}
       <ScrollArea className="flex-1 px-2">
