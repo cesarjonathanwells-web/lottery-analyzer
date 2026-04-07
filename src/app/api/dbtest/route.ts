@@ -25,7 +25,7 @@ export async function GET() {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const code = error instanceof Error ? (error as Record<string, unknown>).code : undefined;
+    const code = error instanceof Error ? (error as unknown as Record<string, unknown>).code : undefined;
 
     return Response.json({
       status: "error",
