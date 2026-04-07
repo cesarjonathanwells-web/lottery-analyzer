@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryState } from "nuqs";
 import { GAMES } from "@/lib/games";
@@ -40,6 +41,14 @@ async function fetchAllDraws(
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-[var(--muted-foreground)]">Loading...</div>}>
+      <HistoryContent />
+    </Suspense>
+  );
+}
+
+function HistoryContent() {
   const [gameId, setGameId] = useQueryState("game", {
     defaultValue: "powerball",
   });
