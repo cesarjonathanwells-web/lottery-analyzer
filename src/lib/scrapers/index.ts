@@ -3,11 +3,13 @@ import { scrapeConectate } from "./conectate";
 import { scrapeOcean } from "./ocean";
 import { scrapeLotterycoast } from "./lotterycoast";
 import { scrapeSoda, SODA_GAMES, fetchSodaGame } from "./soda";
+import { scrapeEBGLatest, EBG_TO_GAME_ID } from "./elboletoganador";
 import { SCRAPER_CONFIG } from "./scraper-config";
 import { log } from "./utils";
 import type { ScrapedDraw, ScraperConfig } from "./types";
 
 export type { ScrapedDraw } from "./types";
+export { scrapeEBGLatest } from "./elboletoganador";
 
 // ---------------------------------------------------------------------------
 // Scraper dispatch: maps source names to their scraper functions.
@@ -143,10 +145,35 @@ export async function scrapeAllSoda(
 }
 
 /**
- * List all available game IDs (both web scrapers and SODA).
+ * Scrape all latest results from the EBG API (elboletoganador.com).
+ * Covers ~49 lotteries in a single request.
+ */
+export async function scrapeAllEBG(): Promise<ScrapeResult> {
+  const startMs = Date.now();
+  const errors: string[] = [];
+
+  let draws: ScrapedDraw[] = [];
+  try {
+    draws = await scrapeEBGLatest();
+  } catch (err) {
+    errors.push(
+      `EBG: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  return { draws, errors, elapsedMs: Date.now() - startMs };
+}
+
+/**
+ * List all available game IDs (web scrapers, SODA, and EBG).
  */
 export function listAvailableGames(): string[] {
   const webGames = SCRAPER_CONFIG.scrapers.map((s) => s.lotteryId);
   const sodaGames = SODA_GAMES.map((g) => g.gameId);
-  return [...webGames, ...sodaGames];
+  const ebgGames = [
+    ...new Set(
+      Object.values(EBG_TO_GAME_ID).map((m) => m.gameId),
+    ),
+  ];
+  return [...new Set([...webGames, ...sodaGames, ...ebgGames])];
 }

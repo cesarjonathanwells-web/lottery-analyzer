@@ -102,6 +102,18 @@ export const GAMES: Game[] = [
     drawSchedule: "Daily",
   },
   {
+    id: "gana-mas",
+    name: "Gana Mas",
+    slug: "gana-mas",
+    country: "DO",
+    gameType: "pick3",
+    numberRange: 99,
+    ballsDrawn: 3,
+    bonusBalls: 0,
+    color: "#27ae60",
+    drawSchedule: "Daily",
+  },
+  {
     id: "king-lottery",
     name: "King Lottery",
     slug: "king-lottery",

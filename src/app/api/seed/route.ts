@@ -11,6 +11,7 @@ const gameData = [
   { id: "la-primera", name: "La Primera", country: "DO", gameType: "pick3", numberRange: 99, ballsDrawn: 3, bonusBalls: 0, color: "#d68910", drawSchedule: "Daily" },
   { id: "la-suerte", name: "La Suerte", country: "DO", gameType: "pick3", numberRange: 99, ballsDrawn: 3, bonusBalls: 0, color: "#2e86c1", drawSchedule: "Daily" },
   { id: "lotedom", name: "LoteDom", country: "DO", gameType: "pick3", numberRange: 99, ballsDrawn: 3, bonusBalls: 0, color: "#a04000", drawSchedule: "Daily" },
+  { id: "gana-mas", name: "Gana Mas", country: "DO", gameType: "pick3", numberRange: 99, ballsDrawn: 3, bonusBalls: 0, color: "#27ae60", drawSchedule: "Daily" },
   { id: "king-lottery", name: "King Lottery", country: "DO", gameType: "pick3", numberRange: 99, ballsDrawn: 3, bonusBalls: 0, color: "#7d3c98", drawSchedule: "Daily" },
   { id: "gold-ocean", name: "Gold Ocean", country: "DO", gameType: "pick3", numberRange: 99, ballsDrawn: 3, bonusBalls: 0, color: "#148f77", drawSchedule: "Daily" },
   { id: "ny-pick3", name: "New York Pick 3", country: "US", gameType: "pick3", numberRange: 9, ballsDrawn: 3, bonusBalls: 0, color: "#2c3e50", drawSchedule: "Daily midday & evening" },
