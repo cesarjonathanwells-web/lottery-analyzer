@@ -13,14 +13,17 @@ import {
 } from "@/components/ui/sheet";
 import {
   BarChart3,
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   CircleDot,
   Dices,
+  GitCompare,
+  Hash,
   LayoutDashboard,
   Menu,
-  Search,
   Sparkles,
+  Table2,
   Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,8 +32,9 @@ import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/search", label: "Search", icon: Search },
   { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
+  { href: "/dashboard/tables", label: "Tables", icon: Table2 },
+  { href: "/dashboard/terminals", label: "Terminals", icon: Hash },
   { href: "/dashboard/wheels", label: "Wheels", icon: CircleDot },
   { href: "/dashboard/generator", label: "Generator", icon: Sparkles },
   { href: "/dashboard/backtest", label: "Backtest", icon: Target },
