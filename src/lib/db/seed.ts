@@ -1,6 +1,6 @@
-import "dotenv/config";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { sql } from "drizzle-orm";
 import { games, type GameInsert } from "./schema";
 
 const connectionString = process.env.DATABASE_URL;
@@ -208,14 +208,14 @@ async function seed() {
     .onConflictDoUpdate({
       target: games.id,
       set: {
-        name: games.name,
-        country: games.country,
-        gameType: games.gameType,
-        numberRange: games.numberRange,
-        ballsDrawn: games.ballsDrawn,
-        bonusBalls: games.bonusBalls,
-        color: games.color,
-        drawSchedule: games.drawSchedule,
+        name: sql`excluded.name`,
+        country: sql`excluded.country`,
+        gameType: sql`excluded.game_type`,
+        numberRange: sql`excluded.number_range`,
+        ballsDrawn: sql`excluded.balls_drawn`,
+        bonusBalls: sql`excluded.bonus_balls`,
+        color: sql`excluded.color`,
+        drawSchedule: sql`excluded.draw_schedule`,
       },
     });
 
